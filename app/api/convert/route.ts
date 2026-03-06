@@ -62,9 +62,11 @@ export async function POST(request: NextRequest) {
 
     // ── Directions ────────────────────────────────────────────────────────
     if (parsed.type === 'directions') {
+      console.log('[convert] parsed stops:', JSON.stringify(parsed.stops));
       const settled = await Promise.all(
         parsed.stops.map((stop) => resolveLocation(stop))
       );
+      console.log('[convert] resolved stops (null = failed):', JSON.stringify(settled));
       const stops = settled.filter(
         (s): s is NonNullable<typeof s> => s !== null
       );

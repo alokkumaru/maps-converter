@@ -21,7 +21,10 @@ async function geocode(address: string): Promise<LocationResult | null> {
     { next: { revalidate: 3600 } }
   );
   const data = await res.json();
-  if (data.status !== 'OK' || !data.results?.[0]) return null;
+  if (data.status !== 'OK' || !data.results?.[0]) {
+    console.error(`[geocode] status="${data.status}" error_message="${data.error_message ?? ''}" for address="${address}"`);
+    return null;
+  }
 
   const r = data.results[0];
   // Prefer a specific place name from address components over the generic address

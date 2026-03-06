@@ -143,15 +143,31 @@ function parsePathDirections(path: string): ParsedGoogleUrl {
   const m = path.match(/\/maps\/dir\/(.+)/);
   if (!m) return { type: 'unknown' };
 
-  // Google Maps appends /@lat,lng,zoom and /data=!... after the stops.
-  // These are navigation metadata, not stop names. Remove everything from the
-  // first @-prefixed path segment onwards before splitting into stops.
+  // The section from /@lat,lng,zoom onwards contains navigation metadata.
+  // Crucially, the data= blob encodes per-stop coordinates as !1d{lng}!2d{lat} pairs.
+  // Extract those coordinates BEFORE stripping the section, so we can attach
+  // them to each stop and avoid needing to geocode text-only stop names.
+  const stopCoords: Array<{ lat: number; lng: number }> = [];
+  const atSection = m[1].match(/@[^/].*/);
+  if (atSection) {
+    for (const cm of atSection[0].matchAll(/!1d(-?\d+\.?\d+)!2d(-?\d+\.?\d+)/g)) {
+      stopCoords.push({ lng: parseFloat(cm[1]), lat: parseFloat(cm[2]) });
+    }
+  }
+
+  // Strip everything from the @-prefixed segment onwards.
   const stopsSection = m[1].replace(/@[^/].*/, '');
 
-  const stops = stopsSection
+  const rawStops = stopsSection
     .split('/')
     .filter(Boolean)
     .map((p) => parseLocStr(pctDecode(p)));
+
+  // Attach per-stop coordinates if available — this avoids needing a Geocoding
+  // API call for stops that are expressed as place names in the URL.
+  const stops = rawStops.map((stop, i) =>
+    stopCoords[i] ? { ...stop, ...stopCoords[i] } : stop
+  );
 
   if (stops.length < 2) return { type: 'unknown' };
   return { type: 'directions', stops, travelMode: 'driving' };
