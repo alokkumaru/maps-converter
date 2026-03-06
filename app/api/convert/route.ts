@@ -54,10 +54,21 @@ export async function POST(request: NextRequest) {
     // ── Single location ───────────────────────────────────────────────────
     if (parsed.type === 'place') {
       const location = await resolveLocation(parsed);
-      if (!location) return error('Could not find this location', 404);
 
-      const appleUrl = buildAppleLocationUrl(location);
-      return NextResponse.json({ type: 'place', location, appleUrl });
+      if (location) {
+        const appleUrl = buildAppleLocationUrl(location);
+        return NextResponse.json({ type: 'place', location, appleUrl });
+      }
+
+      // Geocoding failed (e.g. API not enabled) but we have a text query —
+      // fall back to an Apple Maps search URL so Apple Maps can locate it.
+      if (parsed.query) {
+        const appleUrl = `https://maps.apple.com/?q=${encodeURIComponent(parsed.query)}`;
+        const fallback = { name: parsed.query, formattedAddress: parsed.query, lat: null, lng: null };
+        return NextResponse.json({ type: 'place', location: fallback, appleUrl });
+      }
+
+      return error('Could not find this location', 404);
     }
 
     // ── Directions ────────────────────────────────────────────────────────

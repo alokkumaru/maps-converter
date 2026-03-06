@@ -7,8 +7,8 @@ import { useState } from 'react';
 interface Location {
   name: string;
   formattedAddress: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
 }
 
 interface Leg {
@@ -157,9 +157,11 @@ function ResultCard({ result }: { result: ConvertResult }) {
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Location</p>
         <p className="font-medium text-gray-900">{result.location.name}</p>
         <p className="text-sm text-gray-500 mt-0.5">{result.location.formattedAddress}</p>
-        <p className="mt-1 text-xs text-gray-400 font-mono">
-          {result.location.lat.toFixed(6)}, {result.location.lng.toFixed(6)}
-        </p>
+        {result.location.lat !== null && result.location.lng !== null && (
+          <p className="mt-1 text-xs text-gray-400 font-mono">
+            {result.location.lat.toFixed(6)}, {result.location.lng.toFixed(6)}
+          </p>
+        )}
         <div className="mt-4 flex gap-2">
           <a
             href={result.appleUrl}
